@@ -7,9 +7,10 @@ const pool = new Pool({
   database: "bootcampx",
 });
 
-pool
-  .query(
-    `
+const cohorts_name = process.argv[2] || "JUL02"; // malicious input from the user
+const value = [cohorts_name];
+
+const safe_query = `
 SELECT
   DISTINCT teachers.name as teacher,
   cohorts.name as cohort
@@ -19,15 +20,17 @@ from
   JOIN students ON students.id = student_id
   JOIN cohorts ON cohorts.id = cohort_id
 WHERE
-  cohorts.name ='${process.argv[2] || "JUL02"}'
+  cohorts.name =$1
 ORDER BY
-  teacher;
+  teacher
+`;
 
-`
-  )
+pool
+  .query(safe_query, value)
   .then((res) => {
     res.rows.forEach((row) => {
       console.log(`${row.cohort}: ${row.teacher}`);
     });
   })
-  .catch((err) => console.error("query error", err.stack));
+  .catch((err) => console.error("query error", err.stack))
+  .finally(() => pool.end());
